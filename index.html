@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نتيجة الدور الثاني 2026 — الاستعلام عن النتيجة</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<style>
+  :root{
+    --bg1:#0f2027;
+    --bg2:#203a43;
+    --bg3:#2c5364;
+    --accent:#22c1c3;
+    --card:#ffffff;
+    --text-dark:#1b2430;
+    --muted:#6b7684;
+    --success:#1e8e5a;
+    --success-bg:#e7f7ef;
+    --fail:#c0392b;
+    --fail-bg:#fdecea;
+    --neutral:#8a6d00;
+    --neutral-bg:#fff8e1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Tahoma','Segoe UI',Arial,sans-serif;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;
+    color:var(--text-dark);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 14px 60px;
+  }
+  .top{
+    text-align:center;
+    margin-bottom:26px;
+    color:#fff;
+  }
+  .top h1{
+    font-size:1.7rem;
+    margin:0 0 6px;
+    letter-spacing:.5px;
+    text-shadow:0 2px 10px rgba(0,0,0,.25);
+  }
+  .top p{
+    margin:0;
+    color:#cfe8e8;
+    font-size:.95rem;
+  }
+  .card{
+    background:var(--card);
+    width:100%;
+    max-width:520px;
+    border-radius:20px;
+    padding:26px 22px;
+    box-shadow:0 20px 50px rgba(0,0,0,.35);
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    top:-60px; right:-60px;
+    width:150px;height:150px;
+    background:radial-gradient(circle,var(--accent) 0%,transparent 70%);
+    opacity:.25;
+  }
+  label{
+    display:block;
+    font-weight:bold;
+    margin-bottom:8px;
+    font-size:.95rem;
+    color:var(--text-dark);
+  }
+  input[type=text]{
+    width:100%;
+    padding:14px 16px;
+    border-radius:12px;
+    border:2px solid #e1e6ea;
+    font-size:1.05rem;
+    outline:none;
+    transition:border-color .2s, box-shadow .2s;
+    font-family:inherit;
+    background:#fafbfc;
+  }
+  input[type=text]:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 4px rgba(34,193,195,.15);
+    background:#fff;
+  }
+  .hint{
+    font-size:.8rem;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  button{
+    margin-top:18px;
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:linear-gradient(90deg,var(--accent),#1aa3a5);
+    color:#fff;
+    font-size:1.05rem;
+    font-weight:bold;
+    cursor:pointer;
+    transition:transform .15s, box-shadow .15s;
+    box-shadow:0 8px 20px rgba(34,193,195,.35);
+  }
+  button:hover{transform:translateY(-2px);}
+  button:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+    transform:none;
+  }
+  #status{
+    text-align:center;
+    color:#fff;
+    margin-top:16px;
+    font-size:.9rem;
+    min-height:20px;
+  }
+  .spinner{
+    display:inline-block;
+    width:16px;height:16px;
+    border:3px solid rgba(255,255,255,.3);
+    border-top-color:#fff;
+    border-radius:50%;
+    animation:spin 0.8s linear infinite;
+    vertical-align:middle;
+    margin-left:8px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .results{
+    width:100%;
+    max-width:520px;
+    margin-top:20px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .result-card{
+    background:var(--card);
+    border-radius:18px;
+    padding:20px;
+    box-shadow:0 12px 30px rgba(0,0,0,.25);
+    animation:fadeIn .35s ease;
+    border-inline-start:6px solid var(--muted);
+  }
+  .result-card.pass{border-inline-start-color:var(--success);}
+  .result-card.fail{border-inline-start-color:var(--fail);}
+  .result-card.neutral{border-inline-start-color:var(--neutral);}
+  @keyframes fadeIn{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  .r-name{
+    font-size:1.15rem;
+    font-weight:bold;
+    color:var(--text-dark);
+    margin-bottom:4px;
+  }
+  .r-seat{
+    color:var(--muted);
+    font-size:.85rem;
+    margin-bottom:14px;
+  }
+  .r-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 0;
+    border-top:1px dashed #ecedf0;
+    font-size:.95rem;
+  }
+  .r-row:first-of-type{border-top:none;}
+  .r-label{color:var(--muted);}
+  .r-value{font-weight:bold;}
+  .status-badge{
+    display:inline-block;
+    padding:6px 14px;
+    border-radius:20px;
+    font-weight:bold;
+    font-size:.9rem;
+  }
+  .pass .status-badge{background:var(--success-bg); color:var(--success);}
+  .fail .status-badge{background:var(--fail-bg); color:var(--fail);}
+  .neutral .status-badge{background:var(--neutral-bg); color:var(--neutral);}
+  .percent-bar-wrap{
+    margin-top:14px;
+    background:#eef1f3;
+    border-radius:10px;
+    height:12px;
+    overflow:hidden;
+  }
+  .percent-bar{
+    height:100%;
+    border-radius:10px;
+    transition:width .6s ease;
+  }
+  .pass .percent-bar{background:linear-gradient(90deg,#22c1c3,var(--success));}
+  .fail .percent-bar{background:linear-gradient(90deg,#e57373,var(--fail));}
+  .neutral .percent-bar{background:linear-gradient(90deg,#f2c94c,var(--neutral));}
+  .no-results{
+    text-align:center;
+    color:#fff;
+    background:rgba(255,255,255,.08);
+    border-radius:14px;
+    padding:20px;
+    max-width:520px;
+    width:100%;
+    margin-top:20px;
+    font-size:.95rem;
+  }
+  .count-note{
+    text-align:center;
+    color:#cfe8e8;
+    font-size:.8rem;
+    margin-top:16px;
+  }
+  footer{
+    margin-top:auto;
+    padding-top:30px;
+    color:rgba(255,255,255,.55);
+    font-size:.75rem;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+  <div class="top">
+    <h1>📋 نتيجة الدور الثاني 2026</h1>
+    <p>اكتب رقم الجلوس أو اسم الطالب للاطلاع على النتيجة</p>
+  </div>
+
+  <div class="card">
+    <label for="query">رقم الجلوس / اسم الطالب</label>
+    <input type="text" id="query" placeholder="مثال: 2001986  أو  سارة أحمد محمد" autocomplete="off">
+    <div class="hint">يمكنك كتابة الاسم بأي شكل من أشكاله (سارة / ساره) وسيتم البحث تلقائيًا</div>
+    <button id="searchBtn" disabled>جاري تحميل قاعدة البيانات...</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="resultsArea" class="results"></div>
+
+  <footer>
+    هذه الخدمة للاستعلام فقط عن نتائج الدور الثاني لعام 2026، والبيانات معروضة كما وردت في السجل الرسمي.<br>
+    يتم البحث بالكامل داخل متصفحك — لا تُرسل أي بيانات لأي خادم
+  </footer>
+
+<script>
+const MAX_DEGREE = 320;
+
+// ---------- Arabic normalization ----------
+function normalizeArabic(str) {
+  if (!str) return "";
+  return str
+    .toString()
+    .trim()
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, "") // remove tashkeel & tatweel
+    .replace(/[أإآا]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+let db = null;
+const statusEl = document.getElementById('status');
+const btn = document.getElementById('searchBtn');
+const input = document.getElementById('query');
+const resultsArea = document.getElementById('resultsArea');
+
+function setStatus(html) {
+  statusEl.innerHTML = html;
+}
+
+async function init() {
+  try {
+    setStatus('جاري تحميل قاعدة البيانات <span class="spinner"></span>');
+    const SQL = await initSqlJs({
+      locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+    });
+    const resp = await fetch('results.db');
+    if (!resp.ok) throw new Error('تعذر تحميل ملف قاعدة البيانات');
+    const buf = await resp.arrayBuffer();
+    db = new SQL.Database(new Uint8Array(buf));
+    btn.disabled = false;
+    btn.textContent = '🔍 بحث';
+    setStatus('');
+  } catch (e) {
+    console.error(e);
+    setStatus('<span style="color:#ffb3b3">حدث خطأ أثناء تحميل قاعدة البيانات: ' + e.message + '</span>');
+  }
+}
+
+init();
+
+const CASE_DESC = {
+  5: "ناجح دور ثان",
+  6: "راسب دور ثان",
+  13: "غياب كلى دور ثان"
+};
+
+function getCaseDesc(row) {
+  return CASE_DESC[row.student_case] || "";
+}
+
+function classify(row) {
+  const desc = getCaseDesc(row);
+  if (desc.includes("ناجح")) return "pass";
+  if (desc.includes("راسب")) return "fail";
+  return "neutral";
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function renderResults(rows) {
+  resultsArea.innerHTML = "";
+  if (rows.length === 0) {
+    resultsArea.innerHTML = `<div class="no-results">🚫 لم يتم العثور على أي نتيجة مطابقة. تأكد من رقم الجلوس أو الاسم وحاول مرة أخرى.</div>`;
+    return;
+  }
+
+  if (rows.length > 1) {
+    const note = document.createElement('div');
+    note.className = 'count-note';
+    note.textContent = `تم العثور على ${rows.length} نتيجة مطابقة — تحقق من رقم الجلوس لتحديد الطالب المطلوب`;
+    resultsArea.appendChild(note);
+  }
+
+  rows.forEach(row => {
+    const cls = classify(row);
+    const percent = ((row.total_degree / MAX_DEGREE) * 100);
+    const percentStr = percent.toFixed(2) + "%";
+
+    const card = document.createElement('div');
+    card.className = 'result-card ' + cls;
+    card.innerHTML = `
+      <div class="r-name">${escapeHtml(row.arabic_name)}</div>
+      <div class="r-seat">رقم الجلوس: ${escapeHtml(row.seating_no)}</div>
+      <div class="r-row">
+        <span class="r-label">الحالة</span>
+        <span class="status-badge">${escapeHtml(getCaseDesc(row))}</span>
+      </div>
+      <div class="r-row">
+        <span class="r-label">مجموع الدرجات</span>
+        <span class="r-value">${row.total_degree} من ${MAX_DEGREE}</span>
+      </div>
+      <div class="r-row">
+        <span class="r-label">النسبة المئوية</span>
+        <span class="r-value">${percentStr}</span>
+      </div>
+      <div class="percent-bar-wrap">
+        <div class="percent-bar" style="width:${Math.min(percent,100)}%"></div>
+      </div>
+    `;
+    resultsArea.appendChild(card);
+  });
+}
+
+function doSearch() {
+  const raw = input.value.trim();
+  if (!raw) {
+    setStatus('من فضلك اكتب رقم الجلوس أو الاسم');
+    return;
+  }
+  if (!db) {
+    setStatus('قاعدة البيانات لم تُحمّل بعد، برجاء الانتظار');
+    return;
+  }
+  setStatus('');
+  resultsArea.innerHTML = '';
+
+  const isNumeric = /^[0-9\u0660-\u0669]+$/.test(raw);
+
+  let rows = [];
+
+  if (isNumeric) {
+    const seat = raw.replace(/[\u0660-\u0669]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+    const stmt = db.prepare("SELECT seating_no, arabic_name, total_degree, student_case FROM results WHERE seating_no = :s LIMIT 1");
+    stmt.bind({ ':s': seat });
+    while (stmt.step()) rows.push(stmt.getAsObject());
+    stmt.free();
+
+    if (rows.length === 0) {
+      const stmt2 = db.prepare("SELECT seating_no, arabic_name, total_degree, student_case FROM results WHERE CAST(seating_no AS TEXT) LIKE :s LIMIT 30");
+      stmt2.bind({ ':s': '%' + seat + '%' });
+      while (stmt2.step()) rows.push(stmt2.getAsObject());
+      stmt2.free();
+    }
+  } else {
+    const target = normalizeArabic(raw);
+    const targetWords = target.split(" ").filter(Boolean);
+
+    const stmt = db.prepare("SELECT seating_no, arabic_name, total_degree, student_case FROM results");
+    const matches = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      const normName = normalizeArabic(row.arabic_name);
+      const allWordsFound = targetWords.every(w => normName.includes(w));
+      if (allWordsFound) {
+        matches.push(row);
+        if (matches.length >= 200) break;
+      }
+    }
+    stmt.free();
+    rows = matches;
+  }
+
+  renderResults(rows);
+}
+
+btn.addEventListener('click', doSearch);
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+</script>
+</body>
+</html>
